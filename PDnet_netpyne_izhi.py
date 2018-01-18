@@ -26,10 +26,11 @@ table = np.array([[0.101,  0.169, 0.044, 0.082, 0.032, 0.,     0.008, 0. ],
                   [0.016,  0.007, 0.021, 0.017, 0.057, 0.020,  0.040, 0.225],
                   [0.036,  0.001, 0.003, 0.001, 0.028, 0.008,  0.066, 0.144]])
 
+# Population per layer (dividing by 50 to reescale the network)
 n_layer = (np.array([20683, 5834, 21915, 5479, 4850, 1065, 14395, 2948]) / 50.).astype(int)
-layer_labels = np.array(['L23e', 'L23i', 'L4e', 'L4i', 'L5e', 'L5i', 'L6e', 'L6i'])
-bg_layer_labels = np.array(['L23e_', 'L23i_', 'L4e_', 'L4i_', 'L5e_', 'L5i_', 'L6e_', 'L6i_'])
-bg_layer = (np.array([1600, 1500 ,2100, 1900, 2000, 1900, 2900, 2100]) / 50.).astype(int)
+layer_labels = np.array(['L23e', 'L23i', 'L4e', 'L4i', 'L5e', 'L5i', 'L6e', 'L6i']) # pop labels
+bg_layer_labels = np.array(['L23e_', 'L23i_', 'L4e_', 'L4i_', 'L5e_', 'L5i_', 'L6e_', 'L6i_']) # netstim pop labels
+bg_layer = (np.array([1600, 1500 ,2100, 1900, 2000, 1900, 2900, 2100]) / 50.).astype(int) # netstim population
 tau_syn = 0.5
 '''
 	Creanting cortical layers
