@@ -26,11 +26,10 @@ table = np.array([[0.101,  0.169, 0.044, 0.082, 0.032, 0.,     0.008, 0. ],
                   [0.016,  0.007, 0.021, 0.017, 0.057, 0.020,  0.040, 0.225],
                   [0.036,  0.001, 0.003, 0.001, 0.028, 0.008,  0.066, 0.144]])
 
-# Population per layer (dividing by 50 to reescale the network)
-n_layer = (np.array([20683, 5834, 21915, 5479, 4850, 1065, 14395, 2948]) / 50.).astype(int)
-layer_labels = np.array(['L23e', 'L23i', 'L4e', 'L4i', 'L5e', 'L5i', 'L6e', 'L6i']) # pop labels
-bg_layer_labels = np.array(['L23e_', 'L23i_', 'L4e_', 'L4i_', 'L5e_', 'L5i_', 'L6e_', 'L6i_']) # netstim pop labels
-bg_layer = (np.array([1600, 1500 ,2100, 1900, 2000, 1900, 2900, 2100]) / 50.).astype(int) # netstim population
+n_layer = (np.array([20683, 5834, 21915, 5479, 4850, 1065, 14395, 2948])/50.).astype(int)
+layer_labels = np.array(['L23e', 'L23i', 'L4e', 'L4i', 'L5e', 'L5i', 'L6e', 'L6i'])
+bg_layer_labels = np.array(['L23e_', 'L23i_', 'L4e_', 'L4i_', 'L5e_', 'L5i_', 'L6e_', 'L6i_'])
+bg_layer = (np.array([1600, 1500 ,2100, 1900, 2000, 1900, 2900, 2100])/50.).astype(int)
 tau_syn = 0.5
 '''
 	Creanting cortical layers
@@ -38,7 +37,7 @@ tau_syn = 0.5
 for i in range(len(n_layer)):
 	netParams.popParams[layer_labels[i]] = {'cellType': 'RS', 'numCells': n_layer[i], 'cellModel': 'Izhi'}
 for i in range(len(n_layer)):
-	netParams.popParams[bg_layer_labels[i]] = {'numCells': bg_layer[i], 'cellModel': 'NetStim', 'rate': 8.0, 'noise': 1,}
+	netParams.popParams[bg_layer_labels[i]] = {'numCells': bg_layer[i] * n_layer[i], 'cellModel': 'NetStim', 'rate': 8.0, 'noise': 1}
 
 '''
 	Cell mechanisms
@@ -59,8 +58,9 @@ for i in range(len(n_layer)):
 	conn_dir = bg_layer_labels[i] + '->' + layer_labels[i]
 	netParams.connParams[conn_dir] = { 
 			        'preConds': {'pop': bg_layer_labels[i]}, 
-			        'postConds': {'pop': layer_labels[i]},            
-			        'weight':.2,
+			        'postConds': {'pop': layer_labels[i]},    
+				'convergence': bg_layer[i],        
+			        'weight':1.5e-2/2,
 			        'delay': .1,
 			        'synMech': 'exc'
 			        }	        
@@ -68,6 +68,7 @@ for i in range(len(n_layer)):
 '''
 	Connect neurons
 '''
+
 for c in range(len(layer_labels)):
 	for r in range(len(layer_labels)):
 		nsyn = int(np.log(1.0-table[r][c])/np.log(1.0 - (1.0/float(n_layer[c]*n_layer[r]))))
@@ -77,8 +78,9 @@ for c in range(len(layer_labels)):
 				netParams.connParams[conn_dir] = { 
 				        'preConds': {'pop': layer_labels[c]}, 
 				        'postConds': {'pop': layer_labels[r]}, 
-				        'convergence': nsyn,    
-				        'weight': '2*max( 0, normal(2,.2) )',                        
+				        #'convergence': nsyn,
+					'probability': nsyn/(n_layer[c]*n_layer[r]),
+				        'weight': '2*max( 0, normal(1.5e-2,1.5e-3) )/2',                        
 				        'delay':  'max( 0.1, normal(1.5, 0.75) )',   
 				        #'threshold': -10,                                
 				        'synMech': 'exc'}
@@ -86,8 +88,9 @@ for c in range(len(layer_labels)):
 				netParams.connParams[conn_dir] = { 
 			        'preConds': {'pop': layer_labels[c]}, 
 			        'postConds': {'pop': layer_labels[r]}, 
-			        'convergence': nsyn,    
-			        'weight': 'max( 0, normal(2, .2) )',                        
+			        #'convergence': nsyn,
+				'probability': nsyn/(n_layer[c]*n_layer[r]),    
+			        'weight': 'max( 0, normal(1.5e-2, 1.5e-3) )/2',                        
 			        'delay':  'max( 0.1, normal(1.5, 0.75) )',   
 			        #'threshold':-10,                                
 			        'synMech': 'exc'}
@@ -95,12 +98,12 @@ for c in range(len(layer_labels)):
 			netParams.connParams[conn_dir] = { 
 			        'preConds': {'pop': layer_labels[c]}, 
 			        'postConds': {'pop': layer_labels[r]}, 
-			        'convergence': nsyn,             
-			        'weight': '4*max( 0, normal(2, 0.2) )',                        
+			        #'convergence': nsyn,
+				'probability': nsyn/(n_layer[c]*n_layer[r]),            
+			        'weight': '4*max( 0, normal(1.5e-2, 1.5e-3) )/2',                        
 			        'delay':  'max( 0.1, normal(0.8, 0.40) )',      
 			        #'threshold': -10,                             
 			        'synMech': 'inh'}       
-     
 
 simConfig = specs.SimConfig()           # object of class SimConfig to store simulation configuration
 simConfig.saveCellSecs=0 
@@ -110,12 +113,12 @@ simConfig.gatherOnlySimData=0
 simConfig.duration = 1000                     # Duration of the simulation, in ms
 simConfig.dt = 0.025                            # Internal integration timestep to use
 simConfig.verbose = False                       # Show detailed messages
-simConfig.recordCells = []
-simConfig.recordTraces = {}#{'V_soma':{'sec':'soma','loc':0.5,'var':'v'}}  # Dict with traces to record
+#simConfig.recordCells = []
+simConfig.recordTraces = {'V_soma':{'sec':'soma','loc':0.5,'var':'v'}}  # Dict with traces to record
 simConfig.recordStep = 0.1                      # Step size in ms to save data (e.g. V traces, LFP, etc)
 simConfig.filename = 'model_output'  # Set file output name
 simConfig.savePickle = False            # Save params, network and sim output to pickle file
 simConfig.hParams = {'celsius': 36, 'v_init': -65.0, 'clamp_resist': 0.001}
 simConfig.analysis['plotRaster'] = {'include': layer_labels, 'timeRange': [0,1000],'popRates': True, 'saveFig': 'PYR_raster.png', 'showFig': False}  
-#simConfig.analysis['plotTraces'] = {'include': [0, 100, 200]}                     # Plot recorded traces for this list of cells
+simConfig.analysis['plotTraces'] = {'include': [0, 100, 200]}                     # Plot recorded traces for this list of cells
 sim.createSimulateAnalyze(netParams, simConfig)
